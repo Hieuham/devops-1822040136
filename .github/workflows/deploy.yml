@@ -1,0 +1,57 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Kiem tra file va title
+        run: |
+          echo "=== Kiem tra cac file bat buoc ==="
+          if [ ! -f "index.html" ] || [ ! -f "style.css" ] || [ ! -f "script.js" ]; then
+            echo "❌ Loi: Thieu file bat buoc!"
+            exit 1
+          fi
+          echo "✅ Du 3 file bat buoc"
+
+          echo "=== Kiem tra the title ==="
+          if ! grep -q "<title>" index.html; then
+            echo "❌ Loi: index.html thieu the <title>!"
+            exit 1
+          fi
+          echo "✅ index.html co the <title>"
+          echo "=== KIEM TRA THANH CONG ==="
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
